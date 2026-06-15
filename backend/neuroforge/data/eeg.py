@@ -107,7 +107,7 @@ class EEGSimulator:
             raw[ci] = sig
 
         raw, artifact_ratio = self._inject_artifacts(raw, rng, artifact_level, fs)
-        features = self._extract_features(raw, fs, artifact_ratio)
+        features = extract_band_features(raw, fs, artifact_ratio)
         return raw, features
 
     # ------------------------------------------------------------------ #
@@ -158,34 +158,41 @@ class EEGSimulator:
             mask[lo:hi] = True
         return raw, float(mask.mean())
 
-    @staticmethod
-    def _extract_features(raw: np.ndarray, fs: float, artifact_ratio: float) -> EEGFeatures:
-        nperseg = min(raw.shape[1], int(fs * 2))
-        freqs, psd = signal.welch(raw, fs=fs, nperseg=nperseg, axis=1)
-        psd_mean = psd.mean(axis=0)  # average across channels
 
-        band_power: dict[str, float] = {}
-        for band, (lo, hi) in EEG_BANDS.items():
-            idx = (freqs >= lo) & (freqs < hi)
-            band_power[band] = float(np.trapezoid(psd_mean[idx], freqs[idx])) if idx.any() else 0.0
-        total = sum(band_power.values()) or 1.0
-        rel = {b: p / total for b, p in band_power.items()}
+def extract_band_features(raw: np.ndarray, fs: float, artifact_ratio: float = 0.0) -> EEGFeatures:
+    """Extract band-power features from a multi-channel signal ``raw`` of shape (n_ch, n_samples).
 
-        # Frontal alpha asymmetry: log(F4 alpha) - log(F3 alpha).
-        alpha_idx = (freqs >= EEG_BANDS["alpha"][0]) & (freqs < EEG_BANDS["alpha"][1])
-        f3_alpha = float(np.trapezoid(psd[0, alpha_idx], freqs[alpha_idx])) + 1e-9
-        f4_alpha = float(np.trapezoid(psd[1, alpha_idx], freqs[alpha_idx])) + 1e-9
-        faa = float(np.log(f4_alpha) - np.log(f3_alpha))
+    Shared by the simulator and the real-EEG (EDF/array) ingestion path so both produce
+    identical feature representations.
+    """
+    if raw.ndim == 1:
+        raw = raw[None, :]
+    nperseg = min(raw.shape[1], int(fs * 2))
+    freqs, psd = signal.welch(raw, fs=fs, nperseg=nperseg, axis=1)
+    psd_mean = psd.mean(axis=0)
 
-        # Crude SNR: band-limited (1-45 Hz) power vs out-of-band power.
-        inband = (freqs >= 1.0) & (freqs < 45.0)
-        sig_p = float(psd_mean[inband].sum()) + 1e-12
-        noise_p = float(psd_mean[~inband].sum()) + 1e-12
-        snr_db = 10.0 * np.log10(sig_p / noise_p)
+    band_power: dict[str, float] = {}
+    for band, (lo, hi) in EEG_BANDS.items():
+        idx = (freqs >= lo) & (freqs < hi)
+        band_power[band] = float(np.trapezoid(psd_mean[idx], freqs[idx])) if idx.any() else 0.0
+    total = sum(band_power.values()) or 1.0
+    rel = {b: p / total for b, p in band_power.items()}
 
-        return EEGFeatures(
-            relative_power=rel,
-            frontal_alpha_asymmetry=faa,
-            snr_db=snr_db,
-            artifact_ratio=artifact_ratio,
-        )
+    alpha_idx = (freqs >= EEG_BANDS["alpha"][0]) & (freqs < EEG_BANDS["alpha"][1])
+    ch0 = 0
+    ch1 = 1 if raw.shape[0] > 1 else 0
+    f3_alpha = float(np.trapezoid(psd[ch0, alpha_idx], freqs[alpha_idx])) + 1e-9
+    f4_alpha = float(np.trapezoid(psd[ch1, alpha_idx], freqs[alpha_idx])) + 1e-9
+    faa = float(np.log(f4_alpha) - np.log(f3_alpha))
+
+    inband = (freqs >= 1.0) & (freqs < 45.0)
+    sig_p = float(psd_mean[inband].sum()) + 1e-12
+    noise_p = float(psd_mean[~inband].sum()) + 1e-12
+    snr_db = 10.0 * np.log10(sig_p / noise_p)
+
+    return EEGFeatures(
+        relative_power=rel,
+        frontal_alpha_asymmetry=faa,
+        snr_db=snr_db,
+        artifact_ratio=artifact_ratio,
+    )

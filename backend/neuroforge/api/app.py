@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import json
 import random
+import tempfile
 
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, File, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -239,6 +240,31 @@ def run_audit(rid: str) -> dict:
         "verified": STORE.db.verify_audit(),
         "disclaimer": DISCLAIMER,
     }
+
+
+@app.get("/eeg/available")
+def eeg_available() -> dict:
+    from ..data.eeg_io import mne_available
+
+    return {"mne_available": mne_available(), "disclaimer": DISCLAIMER}
+
+
+@app.post("/eeg/features")
+async def eeg_features(file: UploadFile = File(...)) -> dict:
+    """Upload an EDF/BDF recording and extract band-power EEG features (requires MNE)."""
+    from ..data.eeg_io import features_from_edf
+
+    suffix = "." + (file.filename or "rec.edf").split(".")[-1]
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+        tmp.write(await file.read())
+        tmp.flush()
+        try:
+            feats = features_from_edf(tmp.name)
+        except RuntimeError as exc:
+            raise HTTPException(501, str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(422, f"could not parse EEG: {exc}") from exc
+    return {"eeg": feats.model_dump(), "disclaimer": DISCLAIMER}
 
 
 @app.get("/molecule/svg")
