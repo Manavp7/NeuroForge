@@ -22,6 +22,15 @@ def composite_score(binding: Uncertain, qed: float) -> float:
     return float(0.6 * norm_binding + 0.4 * qed)
 
 
+def risk_adjusted(score: float, binding: Uncertain, risk_aversion: float | None = None) -> float:
+    """Penalize a candidate's score by its (normalized) binding uncertainty."""
+    from ..config import SETTINGS
+
+    lam = SETTINGS.risk_aversion if risk_aversion is None else risk_aversion
+    norm_std = min(1.0, binding.std / max(SETTINGS.max_binding_std, 1e-6))
+    return float(score * (1.0 - lam * norm_std))
+
+
 def evaluate_molecule(
     smiles: str,
     target_profile: TargetProfile,
@@ -36,12 +45,14 @@ def evaluate_molecule(
     binding = make_predictor(target_profile.target_id, seed=seed).predict(mol)
     safe, notes = safety_gate(admet, binding)
     _, _, efficacy, pkpd_summary = recommend_regimen(binding.value)
+    score = composite_score(binding, admet.qed)
     return Candidate(
         id=_candidate_id(smiles),
         smiles=smiles,
         admet=admet,
         binding=binding,
-        score=round(composite_score(binding, admet.qed), 4),
+        score=round(score, 4),
+        risk_adjusted_score=round(risk_adjusted(score, binding), 4),
         safe=safe,
         safety_notes=notes,
         predicted_effect=round(efficacy, 4),

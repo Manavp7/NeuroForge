@@ -135,6 +135,7 @@ class Candidate(BaseModel):
     admet: ADMET
     binding: Uncertain = Field(default_factory=lambda: Uncertain(value=0.0, std=0.0))
     score: float = 0.0
+    risk_adjusted_score: float = 0.0  # score penalized by binding uncertainty
     safe: bool = True
     safety_notes: list[str] = Field(default_factory=list)
     rationale: str = ""

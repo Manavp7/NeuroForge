@@ -73,6 +73,12 @@ class Settings:
     agentic_redesign: bool = True
     redesign_threshold: float = 0.55  # if best safe score below this, tighten + redesign
 
+    # Uncertainty-aware decisions
+    uncertainty_aware: bool = True
+    risk_aversion: float = field(
+        default_factory=lambda: float(os.getenv("NEUROFORGE_RISK_AVERSION", "0.4"))
+    )
+
     # Closed loop
     max_iterations: int = 6
     state_target_threshold: float = 0.35  # max-construct abnormality below this => "stabilized"

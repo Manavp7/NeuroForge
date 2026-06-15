@@ -98,9 +98,23 @@ class ClosedLoopController:
                 candidates = list({c.id: c for c in candidates}.values())
                 redesigned = True
 
-        candidates.sort(key=lambda c: (c.safe, c.score), reverse=True)
+        # Selection key: uncertainty-aware (risk-adjusted, scaled up when state confidence is low).
+        if SETTINGS.uncertainty_aware:
+            from ..validation.pipeline import risk_adjusted
+
+            eff_lambda = SETTINGS.risk_aversion * (1.5 - 0.5 * float(state.confidence))
+
+            def _key(c):
+                return risk_adjusted(c.score, c.binding, risk_aversion=eff_lambda)
+
+        else:
+
+            def _key(c):
+                return c.score
+
+        candidates.sort(key=lambda c: (c.safe, _key(c)), reverse=True)
         safe = [c for c in candidates if c.safe]
-        chosen = max(safe, key=lambda c: c.score) if safe else None
+        chosen = max(safe, key=_key) if safe else None
         critique_text = self.llm.critique(candidates, target)
         if redesigned:
             critique_text = "[redesign triggered] " + critique_text
