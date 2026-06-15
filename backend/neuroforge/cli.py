@@ -77,6 +77,29 @@ def _run_bench(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_federated(args: argparse.Namespace) -> int:
+    from dataclasses import asdict
+
+    from .federated.fedavg import run_federated
+
+    report = run_federated(
+        n_sites=args.sites, rounds=args.rounds, seed=args.seed, dp_sigma=args.dp_sigma
+    )
+    if args.json:
+        json.dump(asdict(report), sys.stdout, indent=2)
+        print()
+    else:
+        print("NeuroForge federated learning demo (research/simulation only)")
+        print(f"!! {DISCLAIMER}\n")
+        print(f"sites={report.n_sites} rounds={report.rounds} dp_sigma={report.dp_sigma}")
+        print(f"centralized MSE : {report.centralized_mse:.5f}")
+        print(f"federated  MSE : {report.federated_mse:.5f}")
+        print(
+            f"federated MSE first->last: {report.federated_history[0]:.4f} -> {report.federated_history[-1]:.4f}"
+        )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="neuroforge", description="NeuroForge closed-loop simulator (research only)."
@@ -94,6 +117,14 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--n", type=int, default=4, help="patients per condition")
     b.add_argument("--json", action="store_true")
     b.set_defaults(func=_run_bench)
+
+    f = sub.add_parser("federated", help="run the federated-learning demo")
+    f.add_argument("--sites", type=int, default=4)
+    f.add_argument("--rounds", type=int, default=25)
+    f.add_argument("--seed", type=int, default=SETTINGS.default_seed)
+    f.add_argument("--dp-sigma", type=float, default=0.0, help="differential-privacy noise sigma")
+    f.add_argument("--json", action="store_true")
+    f.set_defaults(func=_run_federated)
     return p
 
 
