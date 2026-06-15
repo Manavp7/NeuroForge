@@ -60,6 +60,9 @@ class Settings:
     # Validation / safety gate
     binding_ensemble: int = 12
     max_binding_std: float = 1.5  # reject candidates whose binding UQ is too wide
+    binding_model: str = field(
+        default_factory=lambda: os.getenv("NEUROFORGE_BINDING_MODEL", "heuristic")
+    )  # heuristic | mlp | torch
     min_qed: float = 0.30
     max_lipinski_violations: int = 1
 

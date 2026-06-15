@@ -28,6 +28,9 @@ dev = [
     "black>=24.0",
 ]
 openai = ["openai>=1.0"]
+ml = ["torch>=2.0"]
+bio = ["mne>=1.5"]
+explain = ["shap>=0.44"]
 
 [project.scripts]
 neuroforge = "neuroforge.cli:main"

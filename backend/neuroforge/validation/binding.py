@@ -33,7 +33,9 @@ class BindingPredictor:
         self.weights = 1.0 + 0.18 * rng.standard_normal((self.ensemble, PHARM_DIM))
 
     def predict(self, mol: Chem.Mol) -> Uncertain:
-        vec = pharmacophore_vector(mol)
+        return self.predict_vector(pharmacophore_vector(mol))
+
+    def predict_vector(self, vec: np.ndarray) -> Uncertain:
         diff = vec - self.target.ideal_pharmacophore
         # Per-member similarity -> pseudo pKi in ~[4, 9].
         dists = np.linalg.norm(self.weights * diff, axis=1)
@@ -45,3 +47,16 @@ class BindingPredictor:
         ood = float(np.min(np.linalg.norm(_LIB_VECTORS - vec, axis=1)))
         std *= 1.0 + ood
         return Uncertain(value=round(mean, 3), std=round(std, 3))
+
+
+def make_predictor(target_id: str, seed: int | None = None, kind: str | None = None):
+    """Factory selecting the binding model: 'heuristic' (default), 'mlp', or 'torch'."""
+    from ..config import SETTINGS
+
+    kind = kind or SETTINGS.binding_model
+    if kind == "heuristic":
+        return BindingPredictor(target_id, seed=seed)
+    # Imported lazily to avoid a hard dependency when unused.
+    from .binding_nn import get_nn_predictor
+
+    return get_nn_predictor(target_id, seed=seed, kind=kind)

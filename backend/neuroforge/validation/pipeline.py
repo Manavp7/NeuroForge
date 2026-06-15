@@ -9,7 +9,7 @@ from rdkit import Chem
 from ..loop.pkpd import recommend_regimen
 from ..models import Candidate, TargetProfile, Uncertain
 from .admet import compute_admet
-from .binding import BindingPredictor
+from .binding import make_predictor
 from .uncertainty import safety_gate
 
 
@@ -33,7 +33,7 @@ def evaluate_molecule(
     if mol is None:
         return None
     admet = compute_admet(mol)
-    binding = BindingPredictor(target_profile.target_id, seed=seed).predict(mol)
+    binding = make_predictor(target_profile.target_id, seed=seed).predict(mol)
     safe, notes = safety_gate(admet, binding)
     _, _, efficacy, pkpd_summary = recommend_regimen(binding.value)
     return Candidate(
