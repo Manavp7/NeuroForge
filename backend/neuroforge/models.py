@@ -138,6 +138,8 @@ class Candidate(BaseModel):
     safe: bool = True
     safety_notes: list[str] = Field(default_factory=list)
     rationale: str = ""
+    predicted_effect: float = 0.0  # PK/PD steady-state efficacy fraction (0..Emax)
+    pkpd: dict[str, Any] = Field(default_factory=dict)  # regimen + concentration summary
     provenance: dict[str, Any] = Field(default_factory=dict)
     svg: str | None = None
 

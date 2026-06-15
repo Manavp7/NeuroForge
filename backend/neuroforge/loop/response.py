@@ -23,9 +23,13 @@ def simulate_response(
     rng = np.random.default_rng(seed + 991 * session)
     latent = dict(profile.latent_state)
 
-    # Normalized binding (pseudo-pKi 4..9 -> 0..1) drives efficacy, capped per dose.
-    norm_binding = float(np.clip((candidate.binding.value - 4.0) / 5.0, 0.0, 1.0))
-    efficacy = 0.55 * norm_binding
+    # Efficacy comes from the PK/PD steady-state effect (Emax model). Fall back to a
+    # binding-derived estimate if PK/PD was not computed for this candidate.
+    if candidate.predicted_effect > 0:
+        efficacy = float(candidate.predicted_effect)
+    else:
+        norm_binding = float(np.clip((candidate.binding.value - 4.0) / 5.0, 0.0, 1.0))
+        efficacy = 0.55 * norm_binding
 
     for construct in target_profile.driving_constructs:
         before = latent.get(construct, 0.0)
