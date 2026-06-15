@@ -324,7 +324,8 @@ def cohort(req: CohortRequest) -> dict:
     if req.condition not in CONDITIONS:
         raise HTTPException(400, f"Unknown condition {req.condition!r}")
     n = max(1, min(req.n, 12))  # bound work for responsiveness
-    result = run_cohort(req.condition, n=n, seed=req.seed, controller=controller())
+    # Reuse the cached estimator but a fast GA config for cohort responsiveness.
+    result = run_cohort(req.condition, n=n, seed=req.seed, estimator=controller().estimator)
     return {**result, "disclaimer": DISCLAIMER}
 
 

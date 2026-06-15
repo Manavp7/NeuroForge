@@ -13,11 +13,16 @@ def run_cohort(
     n: int = 6,
     seed: int = 3,
     controller: ClosedLoopController | None = None,
+    estimator=None,
     max_iter: int = 6,
 ) -> dict:
-    """Run ``n`` patients of ``condition`` through the auto loop; return per-patient + summary."""
+    """Run ``n`` patients of ``condition`` through the auto loop; return per-patient + summary.
+
+    Uses a fast GA configuration so cohorts stay responsive; pass ``estimator`` to reuse a
+    pre-trained (cached) state estimator.
+    """
     ctrl = controller or ClosedLoopController(
-        seed=seed, ga_population=18, ga_generations=5, ga_top_k=4
+        seed=seed, estimator=estimator, ga_population=16, ga_generations=4, ga_top_k=4
     )
     gen = SyntheticPatientGenerator(seed=seed)
     patients = []
