@@ -63,7 +63,12 @@ class RunSession:
             self.profile, state, self.index
         )
         self.plan_text, self.critique_text = plan_text, critique_text
-        self._emit("plan", plan_text, target=iteration.target.target_id)
+        self._emit(
+            "plan",
+            plan_text,
+            target=iteration.target.target_id,
+            citations=getattr(self.controller, "_citations", []),
+        )
         self._emit(
             "design",
             f"Generated {len(iteration.candidates)} candidate(s) for {iteration.target.target_name}.",

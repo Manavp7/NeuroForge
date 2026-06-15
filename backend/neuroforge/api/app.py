@@ -78,6 +78,13 @@ def conditions() -> dict:
     return {"conditions": list(CONDITIONS), "disclaimer": DISCLAIMER}
 
 
+@app.get("/rag")
+def rag(query: str = Query(...), k: int = 2) -> dict:
+    from ..agent.rag import cite
+
+    return {"query": query, "citations": cite(query, k=k), "disclaimer": DISCLAIMER}
+
+
 @app.post("/patients")
 def create_patient(req: CreatePatientRequest) -> dict:
     if req.condition not in CONDITIONS:

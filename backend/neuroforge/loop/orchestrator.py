@@ -62,6 +62,15 @@ class ClosedLoopController:
         target = state_to_target(state)
         plan_text = self.llm.plan(state, target)
 
+        # RAG: ground the plan with citations from the mechanism corpus.
+        try:
+            from ..agent.rag import cite
+
+            construct = next(iter(target.driving_constructs), "")
+            self._citations = cite(f"{target.target_name} {construct}", k=2)
+        except Exception:
+            self._citations = []
+
         generator = make_generator(seed=self.seed + index, engine=self.generator_engine)
 
         def _design(constraints=None):
@@ -177,7 +186,13 @@ class ClosedLoopController:
                 break
 
             iteration, plan_text, critique_text = self.build_iteration(current, state, i)
-            _emit(i, "plan", plan_text, target=iteration.target.target_id)
+            _emit(
+                i,
+                "plan",
+                plan_text,
+                target=iteration.target.target_id,
+                citations=getattr(self, "_citations", []),
+            )
             _emit(
                 i,
                 "design",

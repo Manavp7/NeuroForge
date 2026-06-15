@@ -40,6 +40,9 @@ neuroforge = "neuroforge.cli:main"
 where = ["."]
 include = ["neuroforge*"]
 
+[tool.setuptools.package-data]
+neuroforge = ["data/corpus/*.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
