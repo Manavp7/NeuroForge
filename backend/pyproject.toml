@@ -41,7 +41,7 @@ where = ["."]
 include = ["neuroforge*"]
 
 [tool.setuptools.package-data]
-neuroforge = ["data/corpus/*.md"]
+neuroforge = ["data/corpus/*.md", "data/modelcards/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

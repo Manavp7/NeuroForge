@@ -78,6 +78,23 @@ def conditions() -> dict:
     return {"conditions": list(CONDITIONS), "disclaimer": DISCLAIMER}
 
 
+@app.get("/modelcards")
+def modelcards() -> dict:
+    from ..cards import list_cards
+
+    return {"modelcards": list_cards(), "disclaimer": DISCLAIMER}
+
+
+@app.get("/modelcards/{card_id}")
+def modelcard(card_id: str) -> dict:
+    from ..cards import get_card
+
+    content = get_card(card_id)
+    if content is None:
+        raise HTTPException(404, "model card not found")
+    return {"id": card_id, "content": content, "disclaimer": DISCLAIMER}
+
+
 @app.get("/rag")
 def rag(query: str = Query(...), k: int = 2) -> dict:
     from ..agent.rag import cite
