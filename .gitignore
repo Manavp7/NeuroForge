@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local app/runtime data
+.streamlit/secrets.toml
+exports/
+*.sqlite
+*.db
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# OS/editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
