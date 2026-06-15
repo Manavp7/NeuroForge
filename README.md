@@ -102,6 +102,42 @@ See [`backend/neuroforge`](backend/neuroforge) for module-by-module code:
 | `api/` | FastAPI service (REST + SSE streaming + molecule SVG) |
 | `cli.py` | Headless full-loop demo |
 
+## v2 capabilities
+
+NeuroForge has grown well beyond the MVP. Highlights:
+
+**Science / modeling**
+- **PK/PD dosing model** — one-compartment oral PK + Emax PD (SciPy ODE) drives efficacy.
+- **3D conformers** — RDKit ETKDG+MMFF, shape descriptors, MolBlock for a 3D viewer.
+- **Neural binding surrogate** — scikit-learn MLP ensemble (always on) + optional torch MC-dropout (`[ml]`).
+- **Generative SMILES-VAE** — optional torch engine behind the generator interface (GA fallback).
+- **Polypharmacology** — extra targets (COX-2, AChE, NMDA) + combination-therapy designer.
+- **Real EEG ingestion** — MNE EDF/BDF adapter (`[bio]`) sharing the simulator's feature extractor.
+
+**Agent / decisions**
+- **Critique → redesign** — tightens constraints and re-designs when a round is weak.
+- **Explainability** — SHAP (`[explain]`) with an occlusion fallback; `/patients/{id}/explain`.
+- **Uncertainty-aware** — risk-adjusted scoring + confidence-scaled candidate selection.
+- **RAG** — TF-IDF over a mechanism corpus; citations attached to plan events; `/rag`.
+
+**Privacy / governance**
+- **Federated learning** — FedAvg across simulated sites (`neuroforge bench`/`federated` CLIs).
+- **Differential privacy** — Gaussian mechanism for federated updates.
+- **Audit log** — tamper-evident hash chain; `/runs/{id}/audit`.
+- **Model cards** — per-component datasheets; `/modelcards`.
+
+**Product / ops**
+- **Dashboard tabs** — Closed Loop, Cohort (population outcomes), Molecule Lab (edit + validate +
+  3D viewer), Compare runs; plus a clinician/researcher role selector and live trajectory chart.
+- **Persistence** — SQLite (`NEUROFORGE_DB`) for patients/runs/audit; run & patient history endpoints.
+- **Docker** — `docker compose up --build`; **CI** — lint, tests, benchmark, and Playwright e2e.
+- **Typed client** — `npm run gen:types` generates TS types from the live OpenAPI schema.
+
+Optional extras: `pip install -e ".[ml]"` (torch), `".[bio]"` (MNE), `".[explain]"` (SHAP),
+`".[openai]"` (OpenAI agent). All are optional with graceful fallbacks.
+
+CLIs: `neuroforge demo`, `neuroforge bench`, `neuroforge federated`.
+
 ## License
 
 MIT (see `pyproject.toml`). Provided with no warranty; research use only.
