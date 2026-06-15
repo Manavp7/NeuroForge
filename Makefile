@@ -46,3 +46,15 @@ format:
 
 build:
 	cd frontend && npm run build
+
+docker-up:
+	docker compose up --build
+
+docker-down:
+	docker compose down
+
+openapi:
+	cd backend && python scripts/export_openapi.py ../openapi.json
+
+gen-types: openapi
+	cd frontend && npm run gen:types
