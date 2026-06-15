@@ -86,10 +86,15 @@ class PatientState(BaseModel):
     explanations: dict[str, list[tuple[str, float]]] = Field(default_factory=dict)
 
     def abnormality(self) -> float:
-        """Mean absolute construct value (0 = healthy baseline)."""
+        """Severity of the *most* abnormal construct (0 = healthy baseline).
+
+        Using the max (rather than the mean) avoids a single severe abnormality being
+        diluted by many healthy constructs, which gives the closed loop meaningful
+        multi-step dynamics.
+        """
         if not self.constructs:
             return 0.0
-        return sum(abs(u.value) for u in self.constructs.values()) / len(self.constructs)
+        return max(abs(u.value) for u in self.constructs.values())
 
 
 # --------------------------------------------------------------------------- #

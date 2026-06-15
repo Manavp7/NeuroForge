@@ -69,27 +69,39 @@ class SyntheticPatientGenerator:
     ) -> PatientProfile:
         if condition not in _CONDITION_LATENT:
             raise ValueError(f"Unknown condition {condition!r}; valid: {list(_CONDITION_LATENT)}")
-        rng = np.random.default_rng(self.seed + 7919 * self._counter)
+        idx = self._counter
         self._counter += 1
+        rng = np.random.default_rng(self.seed + 7919 * idx)
         pid = patient_id or f"{condition[:4]}-{rng.integers(10000, 99999)}"
-
         latent = self._sample_latent(condition, rng)
+        return self.observe(latent, condition, pid, rng=rng, eeg_seed=idx + 1, session=session)
+
+    def observe(
+        self,
+        latent: dict[str, float],
+        condition: str,
+        patient_id: str,
+        rng: np.random.Generator | None = None,
+        eeg_seed: int = 0,
+        session: int = 0,
+    ) -> PatientProfile:
+        """Build a :class:`PatientProfile` from a given latent state (used for re-sensing)."""
+        if rng is None:
+            rng = np.random.default_rng(self.seed + 104729 * (session + 1))
         genomics = self._genomics(condition, latent, rng)
         proteomics = self._proteomics(latent, rng)
         wearables = self._wearables(latent, rng)
         labs = self._labs(latent, rng)
-
-        _, eeg = EEGSimulator(seed=self.seed + self._counter).simulate(latent, session=session)
-
+        _, eeg = EEGSimulator(seed=self.seed + eeg_seed).simulate(latent, session=session)
         return PatientProfile(
-            id=pid,
+            id=patient_id,
             condition=condition,
             genomics=genomics,
             proteomics=proteomics,
             wearables=wearables,
             labs=labs,
             eeg=eeg,
-            latent_state=latent,
+            latent_state=dict(latent),
         )
 
     # ------------------------------------------------------------------ #
