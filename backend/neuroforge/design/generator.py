@@ -198,3 +198,22 @@ class MoleculeGenerator:
             return _valid(combined.GetMol())
         except Exception:
             return None
+
+
+def make_generator(seed: int | None = None, engine: str | None = None):
+    """Factory selecting the generative engine: 'ga' (default) or 'vae' (optional torch).
+
+    Falls back to the GA when the VAE engine is requested but torch is unavailable.
+    """
+    from ..config import SETTINGS
+
+    engine = engine or SETTINGS.generator_engine
+    if engine == "vae":
+        try:
+            from .vae import VAEGenerator
+
+            return VAEGenerator(seed=seed)
+        except Exception:
+            # torch missing or any init error -> graceful GA fallback.
+            return MoleculeGenerator(seed=seed)
+    return MoleculeGenerator(seed=seed)

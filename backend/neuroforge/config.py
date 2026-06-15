@@ -56,6 +56,9 @@ class Settings:
     ga_generations: int = 12
     ga_top_k: int = 5
     ga_mutation_rate: float = 0.35
+    generator_engine: str = field(
+        default_factory=lambda: os.getenv("NEUROFORGE_GENERATOR", "ga")
+    )  # ga | vae
 
     # Validation / safety gate
     binding_ensemble: int = 12

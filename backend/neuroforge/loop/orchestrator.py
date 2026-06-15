@@ -13,7 +13,7 @@ from collections.abc import Callable
 
 from ..agent.llm import LLMClient, get_llm
 from ..config import SETTINGS
-from ..design.generator import MoleculeGenerator
+from ..design.generator import make_generator
 from ..design.objectives import state_to_target
 from ..inference.state import StateEstimator, get_default_estimator
 from ..models import Iteration, LoopEvent, LoopRun, PatientProfile, PatientState
@@ -33,6 +33,7 @@ class ClosedLoopController:
         ga_population: int | None = None,
         ga_generations: int | None = None,
         ga_top_k: int | None = None,
+        generator_engine: str | None = None,
     ):
         self.seed = SETTINGS.default_seed if seed is None else seed
         self.estimator = estimator or get_default_estimator()
@@ -40,6 +41,7 @@ class ClosedLoopController:
         self.ga_population = ga_population
         self.ga_generations = ga_generations
         self.ga_top_k = ga_top_k
+        self.generator_engine = generator_engine or SETTINGS.generator_engine
 
     # ------------------------------------------------------------------ #
     def infer(self, profile: PatientProfile) -> PatientState:
@@ -52,7 +54,7 @@ class ClosedLoopController:
         target = state_to_target(state)
         plan_text = self.llm.plan(state, target)
 
-        ga_results = MoleculeGenerator(seed=self.seed + index).design(
+        ga_results = make_generator(seed=self.seed + index, engine=self.generator_engine).design(
             target,
             population=self.ga_population,
             generations=self.ga_generations,
