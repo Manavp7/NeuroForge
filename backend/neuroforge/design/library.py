@@ -80,4 +80,32 @@ TARGETS: dict[str, Target] = {
         [0.65, 0.6, 0.4, 0.15, 0.35, 0.5, 0.45, 0.35],
         {"mol_weight": (220, 450), "logp": (1.0, 4.0), "tpsa": (30, 100), "qed": (0.4, 1.0)},
     ),
+    "COX2": Target(
+        "COX2",
+        "COX-2 (anti-inflammatory, alt)",
+        [0.72, 0.5, 0.62, 0.25, 0.45, 0.5, 0.38, 0.42],
+        {"mol_weight": (250, 480), "logp": (1.0, 4.0), "tpsa": (50, 120), "qed": (0.4, 1.0)},
+    ),
+    "AChE": Target(
+        "AChE",
+        "Acetylcholinesterase (pro-cognitive)",
+        [0.6, 0.65, 0.35, 0.1, 0.35, 0.55, 0.5, 0.45],
+        {"mol_weight": (220, 470), "logp": (1.0, 4.5), "tpsa": (20, 90), "qed": (0.4, 1.0)},
+    ),
+    "NMDA": Target(
+        "NMDA",
+        "NMDA receptor (neuroprotective)",
+        [0.6, 0.55, 0.45, 0.2, 0.4, 0.45, 0.5, 0.4],
+        {"mol_weight": (200, 450), "logp": (0.5, 4.0), "tpsa": (30, 110), "qed": (0.35, 1.0)},
+    ),
+}
+
+# Alternative targets available per construct (first is the primary used by state_to_target).
+CONSTRUCT_TARGETS: dict[str, list[str]] = {
+    "neuroinflammation": ["TNF_alpha", "COX2"],
+    "dopaminergic_deficit": ["D2", "AChE"],
+    "serotonergic_deficit": ["SERT"],
+    "pain_index": ["Nav1_7", "COX2"],
+    "mood_index": ["SERT"],
+    "seizure_risk": ["GABA_A", "NMDA"],
 }

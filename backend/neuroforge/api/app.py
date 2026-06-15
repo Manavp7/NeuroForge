@@ -104,6 +104,28 @@ def get_patient_state(pid: str) -> dict:
     return {"state": state.model_dump(), "disclaimer": DISCLAIMER}
 
 
+@app.post("/patients/{pid}/combination")
+def patient_combination(pid: str, max_targets: int = 2, threshold: float = 0.4) -> dict:
+    """Propose a polypharmacology combination regimen for the patient's current state."""
+    from ..loop.combination import design_combination
+
+    profile = STORE.get_patient(pid)
+    if profile is None:
+        raise HTTPException(404, "patient not found")
+    state = controller().infer(profile)
+    items = design_combination(
+        state, seed=controller().seed, max_targets=max_targets, threshold=threshold
+    )
+    serialized = [
+        {
+            "target": it["target"].model_dump(),
+            "candidate": it["candidate"].model_dump() if it["candidate"] else None,
+        }
+        for it in items
+    ]
+    return {"state": state.model_dump(), "combination": serialized, "disclaimer": DISCLAIMER}
+
+
 @app.post("/runs")
 def create_run(req: CreateRunRequest) -> dict:
     profile = STORE.get_patient(req.patient_id)

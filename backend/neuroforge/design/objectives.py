@@ -24,25 +24,55 @@ _CONSTRUCT_TO_TARGET: dict[str, str] = {
 }
 
 
-def state_to_target(state: PatientState) -> TargetProfile:
-    """Pick the target addressing the most abnormal construct."""
-    if not state.constructs:
-        raise ValueError("Empty patient state")
-    dominant = max(state.constructs.items(), key=lambda kv: kv[1].value)
-    construct, unc = dominant
+def _target_profile_for(construct: str, value: float, std: float) -> TargetProfile:
     target_id = _CONSTRUCT_TO_TARGET[construct]
     target = TARGETS[target_id]
     rationale = (
-        f"Dominant abnormality is {construct.replace('_', ' ')} "
-        f"({unc.value:.2f}±{unc.std:.2f}); selecting {target.name} as the intervention target."
+        f"Addressing {construct.replace('_', ' ')} " f"({value:.2f}±{std:.2f}) via {target.name}."
     )
     return TargetProfile(
         target_id=target_id,
         target_name=target.name,
         rationale=rationale,
         property_windows=target.property_windows,
-        driving_constructs={construct: unc.value},
+        driving_constructs={construct: value},
     )
+
+
+def state_to_target(state: PatientState) -> TargetProfile:
+    """Pick the target addressing the most abnormal construct."""
+    if not state.constructs:
+        raise ValueError("Empty patient state")
+    construct, unc = max(state.constructs.items(), key=lambda kv: kv[1].value)
+    tp = _target_profile_for(construct, unc.value, unc.std)
+    tp.rationale = f"Dominant abnormality is {construct.replace('_', ' ')}; " + tp.rationale
+    return tp
+
+
+def state_to_targets(
+    state: PatientState, threshold: float = 0.4, max_targets: int = 3
+) -> list[TargetProfile]:
+    """Polypharmacology: a target per sufficiently-elevated construct (dedup by target)."""
+    elevated = sorted(
+        (
+            (c, u)
+            for c, u in state.constructs.items()
+            if u.value >= threshold and c in _CONSTRUCT_TO_TARGET
+        ),
+        key=lambda kv: kv[1].value,
+        reverse=True,
+    )
+    profiles: list[TargetProfile] = []
+    seen: set[str] = set()
+    for construct, unc in elevated:
+        tp = _target_profile_for(construct, unc.value, unc.std)
+        if tp.target_id in seen:
+            continue
+        seen.add(tp.target_id)
+        profiles.append(tp)
+        if len(profiles) >= max_targets:
+            break
+    return profiles
 
 
 def pharmacophore_similarity(mol: Chem.Mol, target: Target) -> float:
