@@ -101,11 +101,33 @@ def property_match(descriptors: dict[str, float], target: Target) -> float:
     return float(np.mean(scores))
 
 
-def design_score(mol: Chem.Mol, target_profile: TargetProfile) -> float:
-    """Composite design objective in ~[0, 1] used by the GA fitness function."""
+def design_score(mol: Chem.Mol, target_profile: TargetProfile, constraints=None) -> float:
+    """Composite design objective in ~[0, 1] used by the GA fitness function.
+
+    ``constraints`` (a :class:`~neuroforge.design.constraints.DesignConstraints`) optionally
+    tightens property windows and adds a synthetic-accessibility penalty for the redesign pass.
+    """
     target = TARGETS[target_profile.target_id]
     desc = compute_descriptors(mol)
     sim = pharmacophore_similarity(mol, target)
     pm = property_match(desc, target)
     qed = desc["qed"]
-    return float(0.5 * sim + 0.3 * pm + 0.2 * qed)
+    score = 0.5 * sim + 0.3 * pm + 0.2 * qed
+
+    if constraints is not None:
+        # Honor tightened windows by scoring against them too.
+        if constraints.property_windows:
+            tmp = TARGETS[target_profile.target_id]
+            extra = [
+                _window_match(desc.get(name, 0.0), lo, hi)
+                for name, (lo, hi) in constraints.property_windows.items()
+            ]
+            if extra:
+                score = 0.85 * score + 0.15 * float(np.mean(extra))
+            del tmp
+        if constraints.max_sa is not None:
+            from ..chem import sa_proxy
+
+            if sa_proxy(mol) > constraints.max_sa:
+                score *= 0.8  # discourage hard-to-make molecules
+    return float(score)

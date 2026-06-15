@@ -56,8 +56,9 @@ def run_benchmark(
     controller = ClosedLoopController(seed=seed, estimator=est, **kwargs)
 
     per_condition: list[ConditionMetrics] = []
-    for condition in CONDITIONS:
-        gen = SyntheticPatientGenerator(seed=seed + hash(condition) % 1000)
+    for ci, condition in enumerate(CONDITIONS):
+        # Deterministic per-condition seed offset (avoid hash() randomization across processes).
+        gen = SyntheticPatientGenerator(seed=seed + 1000 * (ci + 1))
         results = [_run_one(controller, gen, condition) for _ in range(n_per_condition)]
         per_condition.append(
             ConditionMetrics(

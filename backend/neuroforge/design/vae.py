@@ -137,6 +137,7 @@ class VAEGenerator:
         population: int | None = None,
         generations: int | None = None,
         top_k: int | None = None,
+        constraints=None,
     ) -> list[GAResult]:
         n_samples = (population or SETTINGS.ga_population) * (generations or 4)
         k = top_k or SETTINGS.ga_top_k
@@ -148,7 +149,7 @@ class VAEGenerator:
                 continue
             canon = Chem.MolToSmiles(mol)
             if canon not in seen:
-                seen[canon] = design_score(mol, target)
+                seen[canon] = design_score(mol, target, constraints)
         if not seen:
             # Decoder produced nothing valid -> let the caller fall back.
             from .generator import MoleculeGenerator

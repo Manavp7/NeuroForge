@@ -69,6 +69,10 @@ class Settings:
     min_qed: float = 0.30
     max_lipinski_violations: int = 1
 
+    # Agentic redesign
+    agentic_redesign: bool = True
+    redesign_threshold: float = 0.55  # if best safe score below this, tighten + redesign
+
     # Closed loop
     max_iterations: int = 6
     state_target_threshold: float = 0.35  # max-construct abnormality below this => "stabilized"

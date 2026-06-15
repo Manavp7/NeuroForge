@@ -34,6 +34,8 @@ class ClosedLoopController:
         ga_generations: int | None = None,
         ga_top_k: int | None = None,
         generator_engine: str | None = None,
+        agentic_redesign: bool | None = None,
+        redesign_threshold: float | None = None,
     ):
         self.seed = SETTINGS.default_seed if seed is None else seed
         self.estimator = estimator or get_default_estimator()
@@ -42,6 +44,12 @@ class ClosedLoopController:
         self.ga_generations = ga_generations
         self.ga_top_k = ga_top_k
         self.generator_engine = generator_engine or SETTINGS.generator_engine
+        self.agentic_redesign = (
+            SETTINGS.agentic_redesign if agentic_redesign is None else agentic_redesign
+        )
+        self.redesign_threshold = (
+            SETTINGS.redesign_threshold if redesign_threshold is None else redesign_threshold
+        )
 
     # ------------------------------------------------------------------ #
     def infer(self, profile: PatientProfile) -> PatientState:
@@ -54,26 +62,48 @@ class ClosedLoopController:
         target = state_to_target(state)
         plan_text = self.llm.plan(state, target)
 
-        ga_results = make_generator(seed=self.seed + index, engine=self.generator_engine).design(
-            target,
-            population=self.ga_population,
-            generations=self.ga_generations,
-            top_k=self.ga_top_k,
-        )
-        candidates = []
-        for r in ga_results:
-            cand = evaluate_molecule(
-                r.smiles, target, seed=self.seed + index, provenance={"design_score": r.score}
+        generator = make_generator(seed=self.seed + index, engine=self.generator_engine)
+
+        def _design(constraints=None):
+            results = generator.design(
+                target,
+                population=self.ga_population,
+                generations=self.ga_generations,
+                top_k=self.ga_top_k,
+                constraints=constraints,
             )
-            if cand is None:
-                continue
-            cand.rationale = self.llm.rationale(cand, target)
-            candidates.append(cand)
+            out = []
+            for r in results:
+                cand = evaluate_molecule(
+                    r.smiles, target, seed=self.seed + index, provenance={"design_score": r.score}
+                )
+                if cand is not None:
+                    cand.rationale = self.llm.rationale(cand, target)
+                    out.append(cand)
+            return out
+
+        candidates = _design()
+
+        # Agentic critique -> redesign: if the round is weak, tighten constraints and retry.
+        redesigned = False
+        if self.agentic_redesign:
+            safe0 = [c for c in candidates if c.safe]
+            best0 = max((c.score for c in safe0), default=0.0)
+            if not safe0 or best0 < self.redesign_threshold:
+                from ..design.constraints import derive_constraints, passes_constraints
+
+                constraints = derive_constraints(candidates, target)
+                extra = _design(constraints=constraints)
+                candidates = candidates + [c for c in extra if passes_constraints(c, constraints)]
+                candidates = list({c.id: c for c in candidates}.values())
+                redesigned = True
 
         candidates.sort(key=lambda c: (c.safe, c.score), reverse=True)
         safe = [c for c in candidates if c.safe]
         chosen = max(safe, key=lambda c: c.score) if safe else None
         critique_text = self.llm.critique(candidates, target)
+        if redesigned:
+            critique_text = "[redesign triggered] " + critique_text
 
         iteration = Iteration(
             index=index,

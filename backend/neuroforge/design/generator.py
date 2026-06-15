@@ -54,6 +54,7 @@ class MoleculeGenerator:
         population: int | None = None,
         generations: int | None = None,
         top_k: int | None = None,
+        constraints=None,
     ) -> list[GAResult]:
         rng = np.random.default_rng(self.seed)
         pop_size = population or SETTINGS.ga_population
@@ -66,7 +67,7 @@ class MoleculeGenerator:
         def fitness(mol: Chem.Mol) -> float:
             smi = Chem.MolToSmiles(mol)
             if smi not in cache:
-                cache[smi] = design_score(mol, target)
+                cache[smi] = design_score(mol, target, constraints)
             return cache[smi]
 
         for _gen in range(n_gen):
