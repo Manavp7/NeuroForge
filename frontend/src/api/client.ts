@@ -3,10 +3,29 @@ import type { Candidate, Iteration, LoopEvent, PatientProfile, PatientState } fr
 export const API_BASE =
   (import.meta as { env?: Record<string, string> }).env?.VITE_API_BASE ?? "http://localhost:8000";
 
+let authRole = "clinician";
+let authToken: string | null = null;
+
+export function setRole(role: string) {
+  authRole = role;
+}
+export function getRole(): string {
+  return authRole;
+}
+export function setToken(token: string | null) {
+  authToken = token;
+}
+
 async function jsonFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    "X-Role": authRole,
+    ...((init?.headers as Record<string, string>) ?? {}),
+  };
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "content-type": "application/json" },
     ...init,
+    headers,
   });
   if (!res.ok) {
     throw new Error(`API ${path} failed: ${res.status}`);
@@ -77,6 +96,79 @@ export async function rejectRun(runId: string): Promise<unknown> {
 
 export function moleculeSvgUrl(smiles: string): string {
   return `${API_BASE}/molecule/svg?smiles=${encodeURIComponent(smiles)}`;
+}
+
+export interface TargetInfo {
+  id: string;
+  name: string;
+}
+
+export async function getTargets(): Promise<TargetInfo[]> {
+  const data = await jsonFetch<{ targets: TargetInfo[] }>("/targets");
+  return data.targets;
+}
+
+export async function evaluateMolecule(smiles: string, targetId: string): Promise<Candidate> {
+  const data = await jsonFetch<{ candidate: Candidate }>("/molecule/evaluate", {
+    method: "POST",
+    body: JSON.stringify({ smiles, target_id: targetId }),
+  });
+  return data.candidate;
+}
+
+export interface CohortPatient {
+  patient_id: string;
+  initial_abnormality: number;
+  final_abnormality: number;
+  reduction: number;
+  stabilized: boolean;
+  iterations: number;
+}
+
+export interface CohortResult {
+  summary: {
+    condition: string;
+    n: number;
+    stabilized_rate: number;
+    mean_reduction: number;
+    std_reduction: number;
+    mean_iterations: number;
+  };
+  patients: CohortPatient[];
+}
+
+export async function runCohort(condition: string, n: number): Promise<CohortResult> {
+  return jsonFetch<CohortResult>("/cohort", {
+    method: "POST",
+    body: JSON.stringify({ condition, n }),
+  });
+}
+
+export interface RunSummary {
+  id: string;
+  patient_id: string;
+  status: string;
+}
+
+export async function listRuns(): Promise<RunSummary[]> {
+  const data = await jsonFetch<{ runs: RunSummary[] }>("/runs");
+  return data.runs;
+}
+
+export async function getMolblock(smiles: string): Promise<string> {
+  const data = await jsonFetch<{ molblock: string }>(
+    `/molecule/molblock?smiles=${encodeURIComponent(smiles)}`,
+  );
+  return data.molblock;
+}
+
+/** Trajectory of abnormality across a run's iterations (for charts). */
+export function trajectory(run: { iterations: Iteration[] }): { before: number[]; after: number[] } {
+  const before = run.iterations.map((it) => it.abnormality_before);
+  const after = run.iterations.map((it) =>
+    it.abnormality_after == null ? it.abnormality_before : it.abnormality_after,
+  );
+  return { before, after };
 }
 
 /** Stream loop events via SSE. Returns an unsubscribe function. */

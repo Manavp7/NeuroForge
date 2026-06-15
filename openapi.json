@@ -46,6 +46,118 @@
         }
       }
     },
+    "/modelcards": {
+      "get": {
+        "summary": "Modelcards",
+        "operationId": "modelcards_modelcards_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Modelcards Modelcards Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/modelcards/{card_id}": {
+      "get": {
+        "summary": "Modelcard",
+        "operationId": "modelcard_modelcards__card_id__get",
+        "parameters": [
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Card Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Modelcard Modelcards  Card Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag": {
+      "get": {
+        "summary": "Rag",
+        "operationId": "rag_rag_get",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query"
+            }
+          },
+          {
+            "name": "k",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 2,
+              "title": "K"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rag Rag Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/patients": {
       "get": {
         "summary": "List Patients",
@@ -169,6 +281,120 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Get Patient State Patients  Pid  State Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patients/{pid}/explain": {
+      "get": {
+        "summary": "Patient Explain",
+        "description": "Per-construct feature attributions for the inferred state (SHAP or occlusion fallback).",
+        "operationId": "patient_explain_patients__pid__explain_get",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pid"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "auto",
+              "title": "Method"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patient Explain Patients  Pid  Explain Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patients/{pid}/combination": {
+      "post": {
+        "summary": "Patient Combination",
+        "description": "Propose a polypharmacology combination regimen for the patient's current state.",
+        "operationId": "patient_combination_patients__pid__combination_post",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pid"
+            }
+          },
+          {
+            "name": "max_targets",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 2,
+              "title": "Max Targets"
+            }
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0.4,
+              "title": "Threshold"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patient Combination Patients  Pid  Combination Post"
                 }
               }
             }
@@ -339,6 +565,22 @@
               "type": "string",
               "title": "Rid"
             }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Role"
+            }
           }
         ],
         "requestBody": {
@@ -497,6 +739,169 @@
         }
       }
     },
+    "/eeg/available": {
+      "get": {
+        "summary": "Eeg Available",
+        "operationId": "eeg_available_eeg_available_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Eeg Available Eeg Available Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eeg/features": {
+      "post": {
+        "summary": "Eeg Features",
+        "description": "Upload an EDF/BDF recording and extract band-power EEG features (requires MNE).",
+        "operationId": "eeg_features_eeg_features_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_eeg_features_eeg_features_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Eeg Features Eeg Features Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cohort": {
+      "post": {
+        "summary": "Cohort",
+        "description": "Run a small cohort through the loop and return the outcome distribution.",
+        "operationId": "cohort_cohort_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CohortRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Cohort Cohort Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/molecule/evaluate": {
+      "post": {
+        "summary": "Molecule Evaluate",
+        "description": "Validate an arbitrary (possibly hand-edited) molecule against a target.",
+        "operationId": "molecule_evaluate_molecule_evaluate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Molecule Evaluate Molecule Evaluate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/targets": {
+      "get": {
+        "summary": "Targets",
+        "operationId": "targets_targets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Targets Targets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/molecule/svg": {
       "get": {
         "summary": "Molecule Svg",
@@ -533,6 +938,57 @@
           }
         }
       }
+    },
+    "/molecule/molblock": {
+      "get": {
+        "summary": "Molecule Molblock",
+        "operationId": "molecule_molblock_molecule_molblock_get",
+        "parameters": [
+          {
+            "name": "smiles",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Smiles"
+            }
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 7,
+              "title": "Seed"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Molecule Molblock Molecule Molblock Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -553,6 +1009,41 @@
         },
         "type": "object",
         "title": "ApproveRequest"
+      },
+      "Body_eeg_features_eeg_features_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_eeg_features_eeg_features_post"
+      },
+      "CohortRequest": {
+        "properties": {
+          "condition": {
+            "type": "string",
+            "title": "Condition",
+            "default": "neuroinflammatory"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N",
+            "default": 6
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "default": 3
+          }
+        },
+        "type": "object",
+        "title": "CohortRequest"
       },
       "CreatePatientRequest": {
         "properties": {
@@ -599,6 +1090,29 @@
           "patient_id"
         ],
         "title": "CreateRunRequest"
+      },
+      "EvaluateRequest": {
+        "properties": {
+          "smiles": {
+            "type": "string",
+            "title": "Smiles"
+          },
+          "target_id": {
+            "type": "string",
+            "title": "Target Id",
+            "default": "TNF_alpha"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "default": 3
+          }
+        },
+        "type": "object",
+        "required": [
+          "smiles"
+        ],
+        "title": "EvaluateRequest"
       },
       "HTTPValidationError": {
         "properties": {

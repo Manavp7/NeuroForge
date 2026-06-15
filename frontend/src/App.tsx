@@ -7,7 +7,9 @@ import {
   getConditions,
   getPatientState,
   getRun,
+  getRole,
   rejectRun,
+  setRole,
   stepRun,
   streamRun,
 } from "./api/client";
@@ -20,6 +22,12 @@ import MoleculeCard from "./components/MoleculeCard";
 import ValidationPanel from "./components/ValidationPanel";
 import LoopTimeline from "./components/LoopTimeline";
 import ApprovalControls from "./components/ApprovalControls";
+import TrajectoryChart from "./components/TrajectoryChart";
+import CohortView from "./components/CohortView";
+import MoleculeLab from "./components/MoleculeLab";
+import CompareRuns from "./components/CompareRuns";
+
+type Tab = "loop" | "cohort" | "lab" | "compare";
 
 export default function App() {
   const [conditions, setConditions] = useState<string[]>([]);
@@ -33,6 +41,8 @@ export default function App() {
   const [status, setStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("loop");
+  const [role, setRoleState] = useState<string>(getRole());
 
   useEffect(() => {
     getConditions()
@@ -138,13 +148,46 @@ export default function App() {
   return (
     <div className="app">
       <Disclaimer />
-      <header>
-        <h1>NeuroForge</h1>
-        <p className="muted">
-          Adaptive closed-loop molecular therapy — fully-simulated research demo
-        </p>
+      <header className="app-header">
+        <div>
+          <h1>NeuroForge</h1>
+          <p className="muted">
+            Adaptive closed-loop molecular therapy — fully-simulated research demo
+          </p>
+        </div>
+        <label className="role-select">
+          role&nbsp;
+          <select
+            value={role}
+            onChange={(e) => {
+              setRole(e.target.value);
+              setRoleState(e.target.value);
+            }}
+          >
+            <option value="clinician">clinician</option>
+            <option value="researcher">researcher</option>
+          </select>
+        </label>
       </header>
 
+      <nav className="tabs">
+        {(["loop", "cohort", "lab", "compare"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            className={`tab ${tab === t ? "active" : ""}`}
+            onClick={() => setTab(t)}
+          >
+            {t === "loop" ? "Closed Loop" : t === "cohort" ? "Cohort" : t === "lab" ? "Molecule Lab" : "Compare"}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "cohort" && <CohortView conditions={conditions} />}
+      {tab === "lab" && <MoleculeLab />}
+      {tab === "compare" && <CompareRuns />}
+
+      {tab === "loop" && (
+      <>
       <div className="controls card">
         <label>
           Condition&nbsp;
@@ -202,6 +245,8 @@ export default function App() {
         </div>
       )}
 
+      {events.length > 0 && <TrajectoryChart events={events} />}
+
       <div className="grid">
         {selected && <ValidationPanel candidate={selected} />}
         {(runId || events.length > 0) && <LoopTimeline events={events} />}
@@ -212,6 +257,8 @@ export default function App() {
           <h3>Run complete — {status}</h3>
           <p className="muted small">Generate a new patient to run another adaptive loop.</p>
         </div>
+      )}
+      </>
       )}
     </div>
   );
