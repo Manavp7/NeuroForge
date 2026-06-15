@@ -114,12 +114,22 @@ def create_run(req: CreateRunRequest) -> dict:
     return {"run_id": session.id, "status": session.run.status, "disclaimer": DISCLAIMER}
 
 
+@app.get("/runs")
+def list_runs() -> dict:
+    return {"runs": STORE.list_runs(), "disclaimer": DISCLAIMER}
+
+
+@app.get("/patients")
+def list_patients() -> dict:
+    return {"patients": STORE.list_patients(), "disclaimer": DISCLAIMER}
+
+
 @app.get("/runs/{rid}")
 def get_run(rid: str) -> dict:
-    session = STORE.get_session(rid)
-    if session is None:
+    snapshot = STORE.get_run_snapshot(rid)
+    if snapshot is None:
         raise HTTPException(404, "run not found")
-    return {"run": session.run.model_dump(), "disclaimer": DISCLAIMER}
+    return {"run": snapshot, "disclaimer": DISCLAIMER}
 
 
 @app.post("/runs/{rid}/step")
@@ -128,6 +138,7 @@ def step_run(rid: str) -> dict:
     if session is None:
         raise HTTPException(404, "run not found")
     result = session.step()
+    STORE.persist_session(session)
     payload = {k: (v.model_dump() if hasattr(v, "model_dump") else v) for k, v in result.items()}
     payload["disclaimer"] = DISCLAIMER
     return payload
@@ -150,6 +161,17 @@ def _decide(rid: str, approved: bool, candidate_id: str | None) -> dict:
     if session.pending is None:
         raise HTTPException(409, "no pending iteration to decide on")
     result = session.decide(approved, candidate_id)
+    if STORE.db is not None:
+        it = result.get("iteration")
+        cid = candidate_id or (it.chosen.id if it is not None and it.chosen else None)
+        STORE.db.append_audit(
+            rid,
+            actor="clinician",
+            action="approve" if approved else "reject",
+            candidate_id=cid,
+            detail=f"decision on run {rid}",
+        )
+    STORE.persist_session(session)
     payload = {k: (v.model_dump() if hasattr(v, "model_dump") else v) for k, v in result.items()}
     payload["disclaimer"] = DISCLAIMER
     return payload
@@ -180,9 +202,21 @@ def stream_run(rid: str) -> StreamingResponse:
                     ev = session.run.events[emitted]
                     emitted += 1
                     yield f"data: {ev.model_dump_json()}\n\n"
+        STORE.persist_session(session)
         yield f"data: {json.dumps({'phase': 'eof', 'status': session.run.status})}\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+@app.get("/runs/{rid}/audit")
+def run_audit(rid: str) -> dict:
+    if STORE.db is None:
+        return {"audit": [], "verified": True, "disclaimer": DISCLAIMER}
+    return {
+        "audit": STORE.db.list_audit(rid),
+        "verified": STORE.db.verify_audit(),
+        "disclaimer": DISCLAIMER,
+    }
 
 
 @app.get("/molecule/svg")

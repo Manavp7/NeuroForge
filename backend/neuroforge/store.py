@@ -6,11 +6,13 @@ doctor-in-the-loop decisions. (Persistence beyond process lifetime is out of sco
 
 from __future__ import annotations
 
+import os
 import uuid
 
 from .config import SETTINGS
 from .loop.orchestrator import ClosedLoopController
 from .models import Iteration, LoopEvent, LoopRun, PatientProfile, PatientState
+from .persistence import Database
 
 
 class RunSession:
@@ -120,21 +122,58 @@ class RunSession:
 
 
 class Store:
-    def __init__(self):
+    def __init__(self, db: Database | None = None):
         self.patients: dict[str, PatientProfile] = {}
         self.sessions: dict[str, RunSession] = {}
+        self.db = db
 
     def add_patient(self, profile: PatientProfile) -> None:
         self.patients[profile.id] = profile
+        if self.db is not None:
+            self.db.save_patient(profile)
 
     def get_patient(self, pid: str) -> PatientProfile | None:
         return self.patients.get(pid)
 
     def add_session(self, session: RunSession) -> None:
         self.sessions[session.id] = session
+        self.persist_session(session)
 
     def get_session(self, sid: str) -> RunSession | None:
         return self.sessions.get(sid)
 
+    def persist_session(self, session: RunSession) -> None:
+        if self.db is not None:
+            self.db.save_run(session.run)
 
-STORE = Store()
+    def list_runs(self) -> list[dict]:
+        return (
+            self.db.list_runs()
+            if self.db is not None
+            else [
+                {"id": s.id, "patient_id": s.run.patient_id, "status": s.run.status}
+                for s in self.sessions.values()
+            ]
+        )
+
+    def get_run_snapshot(self, rid: str) -> dict | None:
+        session = self.sessions.get(rid)
+        if session is not None:
+            return session.run.model_dump()
+        return self.db.get_run(rid) if self.db is not None else None
+
+    def list_patients(self) -> list[dict]:
+        if self.db is not None:
+            return self.db.list_patients()
+        return [{"id": p.id, "condition": p.condition} for p in self.patients.values()]
+
+
+def _default_db() -> Database | None:
+    path = os.getenv("NEUROFORGE_DB", ":memory:")
+    try:
+        return Database(path)
+    except Exception:
+        return None
+
+
+STORE = Store(db=_default_db())
