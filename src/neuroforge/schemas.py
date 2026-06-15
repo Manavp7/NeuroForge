@@ -194,6 +194,7 @@ class ClosedLoopIteration(BaseModel):
     inferred_state: PatientState
     candidate: MoleculeCandidate
     validation: ValidationResult
+    approval_required: bool = True
     doctor_approved: bool = False
     approval_status: ApprovalStatus
     deliverable: bool = False
@@ -204,9 +205,9 @@ class ClosedLoopIteration(BaseModel):
     def enforce_delivery_gate(self) -> "ClosedLoopIteration":
         allowed = (
             self.validation.passed
-            and self.doctor_approved
             and self.approval_status
             == ApprovalStatus.APPROVED_FOR_SIMULATED_DELIVERY
+            and (self.doctor_approved or not self.approval_required)
         )
         if self.deliverable != allowed:
             raise ValueError("deliverable must reflect validation and doctor approval gates")
