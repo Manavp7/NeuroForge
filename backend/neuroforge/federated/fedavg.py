@@ -67,8 +67,18 @@ def run_federated(
     lr: float = 0.05,
     seed: int = 3,
     dp_sigma: float = 0.0,
+    dp_epsilon: float | None = None,
+    dp_delta: float = 1e-5,
 ) -> FederatedReport:
-    """Train via FedAvg and compare to a centralized model trained on pooled data."""
+    """Train via FedAvg and compare to a centralized model trained on pooled data.
+
+    If ``dp_epsilon`` is given, the per-update noise ``dp_sigma`` is derived from the Gaussian
+    mechanism for (epsilon, delta)-DP.
+    """
+    if dp_epsilon is not None:
+        from ..governance.privacy import gaussian_sigma
+
+        dp_sigma = gaussian_sigma(dp_epsilon, dp_delta, sensitivity=1.0) * 0.01
     sites = [make_site_data(seed + 100 * (i + 1), per_site) for i in range(n_sites)]
     names = sites[0][2]
     Xtest, Ytest, _ = make_site_data(seed + 9999, 80)
