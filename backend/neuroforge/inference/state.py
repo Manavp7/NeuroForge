@@ -62,6 +62,19 @@ class StateEstimator:
             self.models.append(model)
 
     # ------------------------------------------------------------------ #
+    def predict_array(self, X_raw: np.ndarray) -> np.ndarray:
+        """Mean ensemble prediction for raw (unscaled) feature rows -> (n, n_constructs)."""
+        if X_raw.ndim == 1:
+            X_raw = X_raw[None, :]
+        Xs = self.scaler.transform(X_raw)
+        preds = np.array([m.predict(Xs) for m in self.models])  # (ensemble, n, k)
+        return preds.mean(axis=0)
+
+    def baseline(self) -> np.ndarray:
+        """Reference feature vector (training means) used as the explanation background."""
+        return np.asarray(self.scaler.mean_, dtype=float)
+
+    # ------------------------------------------------------------------ #
     def estimate(self, profile: PatientProfile) -> PatientState:
         x = feature_vector(profile, self.feature_names).reshape(1, -1)
         xs = self.scaler.transform(x)

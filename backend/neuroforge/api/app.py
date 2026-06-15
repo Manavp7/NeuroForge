@@ -105,6 +105,18 @@ def get_patient_state(pid: str) -> dict:
     return {"state": state.model_dump(), "disclaimer": DISCLAIMER}
 
 
+@app.get("/patients/{pid}/explain")
+def patient_explain(pid: str, method: str = "auto") -> dict:
+    """Per-construct feature attributions for the inferred state (SHAP or occlusion fallback)."""
+    from ..explain.shap_explain import explain_state
+
+    profile = STORE.get_patient(pid)
+    if profile is None:
+        raise HTTPException(404, "patient not found")
+    result = explain_state(controller().estimator, profile, method=method)
+    return {**result, "disclaimer": DISCLAIMER}
+
+
 @app.post("/patients/{pid}/combination")
 def patient_combination(pid: str, max_targets: int = 2, threshold: float = 0.4) -> dict:
     """Propose a polypharmacology combination regimen for the patient's current state."""
