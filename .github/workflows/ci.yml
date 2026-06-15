@@ -24,6 +24,8 @@ jobs:
         run: black --check neuroforge tests
       - name: Tests
         run: pytest
+      - name: Benchmark (regression)
+        run: python -m neuroforge.cli bench --n 2
 
   frontend:
     runs-on: ubuntu-latest

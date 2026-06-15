@@ -65,6 +65,18 @@ def _run_demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_bench(args: argparse.Namespace) -> int:
+    from .bench import format_report, run_benchmark
+
+    report = run_benchmark(seed=args.seed, n_per_condition=args.n, fast=True)
+    if args.json:
+        json.dump(report, sys.stdout, indent=2)
+        print()
+    else:
+        print(format_report(report))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="neuroforge", description="NeuroForge closed-loop simulator (research only)."
@@ -76,6 +88,12 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--seed", type=int, default=SETTINGS.default_seed)
     d.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     d.set_defaults(func=_run_demo)
+
+    b = sub.add_parser("bench", help="run the benchmark / regression harness")
+    b.add_argument("--seed", type=int, default=SETTINGS.default_seed)
+    b.add_argument("--n", type=int, default=4, help="patients per condition")
+    b.add_argument("--json", action="store_true")
+    b.set_defaults(func=_run_bench)
     return p
 
 
