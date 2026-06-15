@@ -10,7 +10,7 @@ import json
 import random
 import tempfile
 
-from fastapi import FastAPI, File, HTTPException, Query, Response, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -22,6 +22,7 @@ from ..loop.orchestrator import ClosedLoopController
 from ..models import PatientProfile
 from ..render.molecule_svg import molecule_to_svg
 from ..store import STORE, RunSession
+from .auth import require_clinician
 
 app = FastAPI(
     title="NeuroForge API",
@@ -65,6 +66,18 @@ class CreateRunRequest(BaseModel):
 
 class ApproveRequest(BaseModel):
     candidate_id: str | None = None
+
+
+class CohortRequest(BaseModel):
+    condition: str = "neuroinflammatory"
+    n: int = 6
+    seed: int = 3
+
+
+class EvaluateRequest(BaseModel):
+    smiles: str
+    target_id: str = "TNF_alpha"
+    seed: int = 3
 
 
 # --------------------------------------------------------------------------- #
@@ -204,7 +217,7 @@ def step_run(rid: str) -> dict:
 
 
 @app.post("/runs/{rid}/approve")
-def approve_run(rid: str, req: ApproveRequest) -> dict:
+def approve_run(rid: str, req: ApproveRequest, role: str = Depends(require_clinician)) -> dict:
     return _decide(rid, True, req.candidate_id)
 
 
@@ -301,6 +314,50 @@ async def eeg_features(file: UploadFile = File(...)) -> dict:
         except Exception as exc:
             raise HTTPException(422, f"could not parse EEG: {exc}") from exc
     return {"eeg": feats.model_dump(), "disclaimer": DISCLAIMER}
+
+
+@app.post("/cohort")
+def cohort(req: CohortRequest) -> dict:
+    """Run a small cohort through the loop and return the outcome distribution."""
+    from ..cohort import run_cohort
+
+    if req.condition not in CONDITIONS:
+        raise HTTPException(400, f"Unknown condition {req.condition!r}")
+    n = max(1, min(req.n, 12))  # bound work for responsiveness
+    result = run_cohort(req.condition, n=n, seed=req.seed, controller=controller())
+    return {**result, "disclaimer": DISCLAIMER}
+
+
+@app.post("/molecule/evaluate")
+def molecule_evaluate(req: EvaluateRequest) -> dict:
+    """Validate an arbitrary (possibly hand-edited) molecule against a target."""
+    from ..design.library import TARGETS
+    from ..models import TargetProfile
+    from ..validation.pipeline import evaluate_molecule
+
+    if req.target_id not in TARGETS:
+        raise HTTPException(400, f"unknown target {req.target_id!r}")
+    t = TARGETS[req.target_id]
+    target = TargetProfile(
+        target_id=t.target_id,
+        target_name=t.name,
+        property_windows=t.property_windows,
+        driving_constructs={},
+    )
+    cand = evaluate_molecule(req.smiles, target, seed=req.seed)
+    if cand is None:
+        raise HTTPException(422, "invalid SMILES")
+    return {"candidate": cand.model_dump(), "disclaimer": DISCLAIMER}
+
+
+@app.get("/targets")
+def targets() -> dict:
+    from ..design.library import TARGETS
+
+    return {
+        "targets": [{"id": t.target_id, "name": t.name} for t in TARGETS.values()],
+        "disclaimer": DISCLAIMER,
+    }
 
 
 @app.get("/molecule/svg")
