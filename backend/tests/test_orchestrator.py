@@ -2,10 +2,10 @@ import pytest
 
 from neuroforge.agent.llm import MockLLM
 from neuroforge.data.synthetic import SyntheticPatientGenerator
+from neuroforge.design.objectives import state_to_target
 from neuroforge.inference.state import StateEstimator
 from neuroforge.loop.orchestrator import ClosedLoopController
 from neuroforge.loop.response import simulate_response
-from neuroforge.design.objectives import state_to_target
 
 
 @pytest.fixture(scope="module")

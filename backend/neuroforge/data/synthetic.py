@@ -124,7 +124,10 @@ class SyntheticPatientGenerator:
             "serotonergic": latent["serotonergic_deficit"],
             "excitability": latent["seizure_risk"],
         }
-        risk = {k: float(np.clip(v + 0.3 * rng.standard_normal(), 0.0, 2.0)) for k, v in pathways.items()}
+        risk = {
+            k: float(np.clip(v + 0.3 * rng.standard_normal(), 0.0, 2.0))
+            for k, v in pathways.items()
+        }
         return Genomics(pathway_risk=risk)
 
     def _proteomics(self, latent: dict[str, float], rng: np.random.Generator) -> Proteomics:
@@ -142,8 +145,19 @@ class SyntheticPatientGenerator:
         return Wearables(
             hrv_ms=float(max(5.0, 60.0 - 18.0 * burden + 4.0 * rng.standard_normal())),
             resting_hr=float(60.0 + 8.0 * burden + 3.0 * rng.standard_normal()),
-            sleep_efficiency=float(np.clip(0.92 - 0.18 * latent["mood_index"] + 0.03 * rng.standard_normal(), 0.4, 1.0)),
-            activity_index=float(np.clip(1.0 - 0.4 * latent["dopaminergic_deficit"] - 0.2 * latent["mood_index"] + 0.05 * rng.standard_normal(), 0.0, 1.5)),
+            sleep_efficiency=float(
+                np.clip(0.92 - 0.18 * latent["mood_index"] + 0.03 * rng.standard_normal(), 0.4, 1.0)
+            ),
+            activity_index=float(
+                np.clip(
+                    1.0
+                    - 0.4 * latent["dopaminergic_deficit"]
+                    - 0.2 * latent["mood_index"]
+                    + 0.05 * rng.standard_normal(),
+                    0.0,
+                    1.5,
+                )
+            ),
         )
 
     def _labs(self, latent: dict[str, float], rng: np.random.Generator) -> Labs:

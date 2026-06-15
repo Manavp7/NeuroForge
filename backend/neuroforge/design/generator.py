@@ -62,7 +62,6 @@ class MoleculeGenerator:
 
         pop = self._init_population(pop_size, rng)
         cache: dict[str, float] = {}
-        best_history: list[float] = []
 
         def fitness(mol: Chem.Mol) -> float:
             smi = Chem.MolToSmiles(mol)
@@ -70,9 +69,8 @@ class MoleculeGenerator:
                 cache[smi] = design_score(mol, target)
             return cache[smi]
 
-        for gen in range(n_gen):
+        for _gen in range(n_gen):
             scored = sorted(pop, key=fitness, reverse=True)
-            best_history.append(fitness(scored[0]))
             n_elite = max(2, pop_size // 5)
             elites = scored[:n_elite]
             children: list[Chem.Mol] = list(elites)
@@ -139,7 +137,9 @@ class MoleculeGenerator:
                 rw.AddBond(a, new_idx, Chem.BondType.SINGLE)
             elif op == 2:  # remove a terminal atom
                 terminals = [
-                    at.GetIdx() for at in rw.GetAtoms() if at.GetDegree() == 1 and not at.GetIsAromatic()
+                    at.GetIdx()
+                    for at in rw.GetAtoms()
+                    if at.GetDegree() == 1 and not at.GetIsAromatic()
                 ]
                 if terminals:
                     rw.RemoveAtom(int(rng.choice(terminals)))

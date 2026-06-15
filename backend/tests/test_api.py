@@ -37,14 +37,18 @@ def test_create_patient_hides_latent(client):
 
 
 def test_patient_state_endpoint(client):
-    pid = client.post("/patients", json={"condition": "neuroinflammatory", "seed": 5}).json()["patient"]["id"]
+    pid = client.post("/patients", json={"condition": "neuroinflammatory", "seed": 5}).json()[
+        "patient"
+    ]["id"]
     r = client.get(f"/patients/{pid}/state")
     assert r.status_code == 200
     assert "constructs" in r.json()["state"]
 
 
 def test_manual_run_step_approve(client):
-    pid = client.post("/patients", json={"condition": "parkinsonian", "seed": 7}).json()["patient"]["id"]
+    pid = client.post("/patients", json={"condition": "parkinsonian", "seed": 7}).json()["patient"][
+        "id"
+    ]
     rid = client.post("/runs", json={"patient_id": pid, "max_iter": 4}).json()["run_id"]
     step = client.post(f"/runs/{rid}/step").json()
     assert step["status"] in {"awaiting_approval", "stabilized"}
@@ -57,14 +61,18 @@ def test_manual_run_step_approve(client):
 
 
 def test_reject_without_pending_conflicts(client):
-    pid = client.post("/patients", json={"condition": "mood_disorder", "seed": 9}).json()["patient"]["id"]
+    pid = client.post("/patients", json={"condition": "mood_disorder", "seed": 9}).json()[
+        "patient"
+    ]["id"]
     rid = client.post("/runs", json={"patient_id": pid, "max_iter": 2}).json()["run_id"]
     r = client.post(f"/runs/{rid}/reject")
     assert r.status_code == 409  # nothing pending yet
 
 
 def test_stream_run(client):
-    pid = client.post("/patients", json={"condition": "neuroinflammatory", "seed": 11}).json()["patient"]["id"]
+    pid = client.post("/patients", json={"condition": "neuroinflammatory", "seed": 11}).json()[
+        "patient"
+    ]["id"]
     rid = client.post("/runs", json={"patient_id": pid, "max_iter": 4}).json()["run_id"]
     with client.stream("GET", f"/runs/{rid}/stream") as resp:
         assert resp.status_code == 200

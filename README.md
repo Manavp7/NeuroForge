@@ -29,23 +29,62 @@ backend/    Python package `neuroforge` (engine) + FastAPI service + CLI demo
 frontend/   React + Vite + TypeScript dashboard (Plotly visualizations)
 ```
 
-## Quickstart (backend)
+## Quickstart
+
+The repo ships a `Makefile` for convenience (`make help` lists everything):
+
+```bash
+make install     # backend (pip -e) + frontend (npm) deps
+make demo        # headless closed-loop CLI demo
+make api         # FastAPI server  -> http://localhost:8000/docs
+make web         # Vite dev server -> http://localhost:5173
+make test        # backend (pytest) + frontend (vitest)
+```
+
+### Backend (manual)
 
 ```bash
 cd backend
 pip install -e ".[dev]"          # installs RDKit, FastAPI, scikit-learn, etc.
-python -m neuroforge.cli demo    # run the full closed loop headless
-pytest                           # run the test suite
-uvicorn neuroforge.api.app:app --reload   # start the API (http://localhost:8000/docs)
+python -m neuroforge.cli demo --condition parkinsonian --iters 6
+pytest
+uvicorn neuroforge.api.app:app --reload
 ```
 
-## Quickstart (frontend)
+### Frontend (manual)
 
 ```bash
 cd frontend
 npm install
-npm run dev                      # http://localhost:5173 (expects API on :8000)
+npm run dev                      # expects the API on :8000 (override with VITE_API_BASE)
 ```
+
+### Sample CLI run
+
+```
+Patient mood-95040 (condition: mood_disorder)
+  [iter 0] plan      ... design a molecule modulating Serotonin transporter to reduce mood index ...
+  [iter 0] deliver   Therapy delivered (sim); abnormality 0.785 → 0.646.
+  [iter 1] deliver   Therapy delivered (sim); abnormality 0.646 → 0.439.
+  [iter 2] deliver   Therapy delivered (sim); abnormality 0.439 → 0.269.
+  [iter 3] done      Patient state stabilized (abnormality 0.269).
+
+Final status: stabilized
+Abnormality: 0.785 → 0.269 over 3 delivered therapy step(s).
+```
+
+## Conditions & configuration
+
+Supported synthetic conditions: `neuroinflammatory`, `parkinsonian`, `mood_disorder`,
+`epileptiform`, `healthy_control`.
+
+Environment variables:
+
+| Variable | Effect |
+| --- | --- |
+| `OPENAI_API_KEY` | If set (and `pip install -e ".[openai]"`), the agent uses OpenAI for plan/critique text; otherwise a deterministic `MockLLM` is used. No key required. |
+| `NEUROFORGE_OPENAI_MODEL` | Override the OpenAI model name (default `gpt-4o-mini`). |
+| `VITE_API_BASE` | Frontend API base URL (default `http://localhost:8000`). |
 
 ## Architecture
 

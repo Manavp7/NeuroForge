@@ -90,7 +90,11 @@ class ClosedLoopController:
         iteration.approved = approved
         if approved and iteration.chosen is not None:
             next_profile = simulate_response(
-                profile, iteration.chosen, iteration.target, seed=self.seed, session=iteration.index + 1
+                profile,
+                iteration.chosen,
+                iteration.target,
+                seed=self.seed,
+                session=iteration.index + 1,
             )
             iteration.abnormality_after = self.infer(next_profile).abnormality()
             return next_profile, iteration.abnormality_after
@@ -172,6 +176,8 @@ class ClosedLoopController:
 
         else:
             final_abn = self.infer(current).abnormality()
-            run.status = "stabilized" if final_abn < SETTINGS.state_target_threshold else "exhausted"
+            run.status = (
+                "stabilized" if final_abn < SETTINGS.state_target_threshold else "exhausted"
+            )
 
         return run

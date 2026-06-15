@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 from rdkit import Chem, RDLogger
-from rdkit.Chem import Crippen, Descriptors, Lipinski, QED, rdMolDescriptors
+from rdkit.Chem import QED, Crippen, Descriptors, Lipinski, rdMolDescriptors
 
 RDLogger.DisableLog("rdApp.*")  # silence RDKit parse warnings
 

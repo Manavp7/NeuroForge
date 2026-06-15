@@ -68,7 +68,9 @@ class Settings:
     state_target_threshold: float = 0.35  # max-construct abnormality below this => "stabilized"
 
     # Agent
-    openai_model: str = field(default_factory=lambda: os.getenv("NEUROFORGE_OPENAI_MODEL", "gpt-4o-mini"))
+    openai_model: str = field(
+        default_factory=lambda: os.getenv("NEUROFORGE_OPENAI_MODEL", "gpt-4o-mini")
+    )
 
 
 SETTINGS = Settings()

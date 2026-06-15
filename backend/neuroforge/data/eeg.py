@@ -83,7 +83,9 @@ class EEGSimulator:
         band_amp = self._band_amplitudes(latent_state)
 
         # Session non-stationarity: slow amplitude drift + global gain offset.
-        drift = 1.0 + 0.15 * np.sin(2 * np.pi * t / max(duration_s, 1e-6) + rng.uniform(0, 2 * np.pi))
+        drift = 1.0 + 0.15 * np.sin(
+            2 * np.pi * t / max(duration_s, 1e-6) + rng.uniform(0, 2 * np.pi)
+        )
         session_gain = 1.0 + 0.1 * rng.standard_normal()
 
         raw = np.zeros((len(_CHANNELS), n))

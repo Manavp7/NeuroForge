@@ -52,7 +52,9 @@ def _run_demo(args: argparse.Namespace) -> int:
     if delivered:
         first = run.iterations[0].abnormality_before
         last = delivered[-1].abnormality_after
-        print(f"Abnormality: {first:.3f} → {last:.3f} over {len(delivered)} delivered therapy step(s).")
+        print(
+            f"Abnormality: {first:.3f} → {last:.3f} over {len(delivered)} delivered therapy step(s)."
+        )
         chosen = delivered[-1].chosen
         if chosen:
             print(f"Last molecule: {chosen.smiles}")
@@ -64,7 +66,9 @@ def _run_demo(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="neuroforge", description="NeuroForge closed-loop simulator (research only).")
+    p = argparse.ArgumentParser(
+        prog="neuroforge", description="NeuroForge closed-loop simulator (research only)."
+    )
     sub = p.add_subparsers(dest="command", required=True)
     d = sub.add_parser("demo", help="run the headless closed loop")
     d.add_argument("--condition", choices=CONDITIONS, default="neuroinflammatory")

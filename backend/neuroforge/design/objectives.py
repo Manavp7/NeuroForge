@@ -58,7 +58,7 @@ def _window_match(value: float, low: float, high: float) -> float:
         return 1.0
     span = max(high - low, 1e-6)
     dist = (low - value) if value < low else (value - high)
-    return float(np.exp(-(dist / span) ** 2))
+    return float(np.exp(-((dist / span) ** 2)))
 
 
 def property_match(descriptors: dict[str, float], target: Target) -> float:

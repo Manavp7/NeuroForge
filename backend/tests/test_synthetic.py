@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from neuroforge.config import CONDITIONS, STATE_CONSTRUCTS
 from neuroforge.data.synthetic import SyntheticPatientGenerator
@@ -16,11 +17,8 @@ def test_generate_all_conditions():
 
 def test_unknown_condition_raises():
     gen = SyntheticPatientGenerator(seed=5)
-    try:
+    with pytest.raises(ValueError):
         gen.generate("not_a_condition")
-        assert False, "expected ValueError"
-    except ValueError:
-        pass
 
 
 def test_determinism_same_seed():

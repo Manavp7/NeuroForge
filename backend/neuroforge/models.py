@@ -149,7 +149,9 @@ class LoopEvent(BaseModel):
     """A single typed event emitted during a closed-loop run."""
 
     iteration: int
-    phase: str  # sense | infer | plan | design | validate | critique | gate | deliver | monitor | done
+    phase: (
+        str  # sense | infer | plan | design | validate | critique | gate | deliver | monitor | done
+    )
     message: str
     payload: dict[str, Any] = Field(default_factory=dict)
 
@@ -172,7 +174,9 @@ class LoopRun(BaseModel):
 
     id: str
     patient_id: str
-    status: str = "created"  # created | awaiting_approval | running | stabilized | exhausted | rejected
+    status: str = (
+        "created"  # created | awaiting_approval | running | stabilized | exhausted | rejected
+    )
     iterations: list[Iteration] = Field(default_factory=list)
     events: list[LoopEvent] = Field(default_factory=list)
     disclaimer: str = DISCLAIMER
