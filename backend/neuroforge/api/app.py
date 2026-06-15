@@ -222,3 +222,13 @@ def run_audit(rid: str) -> dict:
 @app.get("/molecule/svg")
 def molecule_svg(smiles: str = Query(...)) -> Response:
     return Response(content=molecule_to_svg(smiles), media_type="image/svg+xml")
+
+
+@app.get("/molecule/molblock")
+def molecule_molblock(smiles: str = Query(...), seed: int = 7) -> dict:
+    from ..chem3d import mol_to_molblock, shape_profile
+
+    block = mol_to_molblock(smiles, seed=seed)
+    if block is None:
+        raise HTTPException(422, "could not embed 3D conformer")
+    return {"molblock": block, "shape": shape_profile(smiles, seed=seed), "disclaimer": DISCLAIMER}
